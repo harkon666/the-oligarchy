@@ -40,15 +40,16 @@ contract WarTheater is Ownable, ReentrancyGuard {
         voter = IOligarchyVoter(_voter);
     }
 
-    function _getCurrentEpoch() internal view returns (uint256) {
-        return (block.timestamp / EPOCH_DURATION) * EPOCH_DURATION;
+    // Use OligarchyVoter as single source of truth for epoch
+    function _getEpoch() internal view returns (uint256) {
+        return voter.getCurrentEpoch();
     }
 
     function declareWar(
         uint256 _attackerRegion,
         uint256 _defenderRegion
     ) external {
-        uint256 epoch = _getCurrentEpoch();
+        uint256 epoch = _getEpoch();
         require(_attackerRegion != _defenderRegion, "Self attack");
         require(warTargets[epoch][_attackerRegion] == 0, "Already warring");
 
@@ -65,7 +66,7 @@ contract WarTheater is Ownable, ReentrancyGuard {
         // DEFLATION: Burn OLIG user
         oligToken.burnFrom(msg.sender, _amount);
 
-        uint256 epoch = _getCurrentEpoch();
+        uint256 epoch = _getEpoch();
 
         if (_isAttack) {
             require(warTargets[epoch][_regionId] != 0, "No war target");
@@ -78,7 +79,7 @@ contract WarTheater is Ownable, ReentrancyGuard {
     }
 
     function resolveWar(uint256 _attackerRegion) external nonReentrant {
-        uint256 epoch = _getCurrentEpoch();
+        uint256 epoch = _getEpoch();
         uint256 defenderRegion = warTargets[epoch][_attackerRegion];
 
         require(defenderRegion != 0, "No war");

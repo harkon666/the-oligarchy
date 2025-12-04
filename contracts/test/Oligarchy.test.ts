@@ -11,6 +11,7 @@ import { network } from "hardhat";
  * - Politics: Locking OLIG for veOLIG and voting on regions
  * - Bribe Market: Competition between regions for votes using bribes
  * - Claim Bribe: Voters claim their share of bribe pool after epoch ends
+ * - War Theater: Region battles for bribe looting
  * - Store: Burning OLIG tokens to purchase items
  */
 describe("The Oligarchy GameFi System", function () {
@@ -60,6 +61,43 @@ describe("The Oligarchy GameFi System", function () {
     const initialBal = parseEther("1000");
     for (const user of [farmer, oligarch, attacker, briber1, briber2, voter1, voter2, voter3]) {
       await mETH.write.mint([user.account.address, initialBal]);
+    }
+
+    // Helper function to display pool subsidies
+    async function displayPoolSubsidies(label: string) {
+      const pool0 = await farm.read.poolInfo([0n]);
+      const pool1 = await farm.read.poolInfo([1n]);
+      const pool2 = await farm.read.poolInfo([2n]);
+
+      const alloc0 = pool0[0];
+      const alloc1 = pool1[0];
+      const alloc2 = pool2[0];
+      const totalAlloc = alloc0 + alloc1 + alloc2;
+
+      console.log(`\n--- ${label} ---`);
+      console.log(`\t> Total AllocPoints: ${totalAlloc}`);
+
+      if (totalAlloc > 0n) {
+        const share0 = Number(alloc0 * 10000n / totalAlloc) / 100;
+        const share1 = Number(alloc1 * 10000n / totalAlloc) / 100;
+        const share2 = Number(alloc2 * 10000n / totalAlloc) / 100;
+
+        console.log(`\t> Pool 0 (North): allocPoint=${alloc0}, Share=${share0.toFixed(2)}%`);
+        console.log(`\t> Pool 1 (South): allocPoint=${alloc1}, Share=${share1.toFixed(2)}%`);
+        console.log(`\t> Pool 2 (East): allocPoint=${alloc2}, Share=${share2.toFixed(2)}%`);
+
+        // Calculate estimated OLIG per day (baseRate * seconds per day)
+        const baseRate = 1000000n; // 1 micro OLIG per second base
+        const secondsPerDay = 86400n;
+        const totalEmissionPerDay = baseRate * secondsPerDay;
+
+        console.log(`\t> Daily OLIG Emission (estimated total): ${formatEther(totalEmissionPerDay)} OLIG`);
+        console.log(`\t>   → Pool 0 gets: ~${(share0).toFixed(2)}% of emissions`);
+        console.log(`\t>   → Pool 1 gets: ~${(share1).toFixed(2)}% of emissions`);
+        console.log(`\t>   → Pool 2 gets: ~${(share2).toFixed(2)}% of emissions`);
+      } else {
+        console.log(`\t> No allocations yet`);
+      }
     }
 
     // ========================================
@@ -137,6 +175,9 @@ describe("The Oligarchy GameFi System", function () {
     const voteBlock = await publicClient.getBlock();
     const voteEpoch = voteBlock.timestamp / EPOCH_DURATION;
 
+    // 📊 Show OLIG Subsidy BEFORE Vote War
+    await displayPoolSubsidies("🏛️ OLIG SUBSIDY BEFORE VOTE WAR");
+
     console.log("\n--- Round 1: Bribes Deposited ---");
     {
       // Briber1 bribes Region 0 (North) with 50 mETH
@@ -204,10 +245,13 @@ describe("The Oligarchy GameFi System", function () {
       console.log(`\t> Previous Epoch: ${voteEpoch}`);
       console.log(`\t> Current Epoch: ${newEpoch}`);
 
-      // Sync votes
+      // Sync votes - updates farm allocations based on voting results
       await farm.write.syncVotes({ account: owner.account });
       console.log(`\t> syncVotes() called ✓`);
     }
+
+    // 📊 Show OLIG Subsidy AFTER Vote War
+    await displayPoolSubsidies("🏛️ OLIG SUBSIDY AFTER VOTE WAR");
 
     // ========================================
     // PHASE 4: CLAIM BRIBE - Voters claim rewards
@@ -231,11 +275,9 @@ describe("The Oligarchy GameFi System", function () {
       console.log(`\n--- Expected Rewards (Formula: userVotes/totalVotes * bribePool) ---`);
 
       // Voter1 claims from Region 0 (sole voter gets 100% of 50 mETH bribe)
-      // Expected: power1 / power1 * 50 = 50 mETH
       console.log(`\t> Voter1 expected: 100% of 50 mETH = 50 mETH (sole voter in Region 0)`);
 
       // Voter2 claims from Region 1 (shares 80 mETH bribe with Voter3)
-      // Expected: power2 / (power2 + power3) * 80
       const voter2Share = (power2 * parseEther("80")) / (power2 + power3);
       console.log(`\t> Voter2 expected: ${formatEther(power2)}/${formatEther(power2 + power3)} * 80 = ~${formatEther(voter2Share)} mETH`);
 
@@ -291,9 +333,94 @@ describe("The Oligarchy GameFi System", function () {
     }
 
     // ========================================
-    // PHASE 5: STORE & BURN TEST
+    // PHASE 5: WAR THEATER - Region vs Region Battle
     // ========================================
-    console.log("\n=== PHASE 5: Store & Burn ===");
+    console.log("\n=== PHASE 5: War Theater ===");
+    {
+      // Get current epoch from voter (single source of truth)
+      const currentEpoch = await voter.read.getCurrentEpoch();
+      console.log(`\t> Current Epoch: ${currentEpoch}`);
+
+      // First, deposit bribes to regions in current epoch for war
+      console.log("\n--- Setup: Deposit bribes for new epoch ---");
+      const warBribe1 = parseEther("100");
+      const warBribe2 = parseEther("50");
+
+      await mETH.write.approve([voter.address, warBribe1], { account: briber1.account });
+      await voter.write.depositBribe([1n, warBribe1], { account: briber1.account });
+      console.log(`\t> Region 1 (South) bribe pool: ${formatEther(warBribe1)} mETH`);
+
+      await mETH.write.approve([voter.address, warBribe2], { account: briber2.account });
+      await voter.write.depositBribe([2n, warBribe2], { account: briber2.account });
+      console.log(`\t> Region 2 (East) bribe pool: ${formatEther(warBribe2)} mETH`);
+
+      // Check initial bribe pools
+      const region1Before = await voter.read.regionData([currentEpoch, 1n]);
+      const region2Before = await voter.read.regionData([currentEpoch, 2n]);
+      console.log(`\n--- Initial Bribe Pools ---`);
+      console.log(`\t> Region 1 bribe: ${formatEther(region1Before[1])} mETH`);
+      console.log(`\t> Region 2 bribe: ${formatEther(region2Before[1])} mETH`);
+
+      // Declare War: Region 1 attacks Region 2
+      console.log("\n--- War Declaration ---");
+      await war.write.declareWar([1n, 2n], { account: attacker.account });
+      console.log(`\t> ⚔️ Region 1 (South) declares war on Region 2 (East)!`);
+
+      // Mint OLIG to attacker and defender for troops  
+      await olig.write.mint([attacker.account.address, parseEther("1000")]);
+      await olig.write.mint([farmer.account.address, parseEther("500")]);
+
+      // Attacker enlists troops (burns OLIG for attack power)
+      console.log("\n--- Troop Enlistment (Burns OLIG) ---");
+      const attackTroops = parseEther("800");
+      const defendTroops = parseEther("300");
+
+      await olig.write.approve([war.address, attackTroops], { account: attacker.account });
+      await war.write.enlistTroops([1n, attackTroops, true], { account: attacker.account });
+      console.log(`\t> Attacker burns ${formatEther(attackTroops)} OLIG for attack power`);
+
+      // Defender enlists troops
+      await olig.write.approve([war.address, defendTroops], { account: farmer.account });
+      await war.write.enlistTroops([2n, defendTroops, false], { account: farmer.account });
+      console.log(`\t> Defender burns ${formatEther(defendTroops)} OLIG for defense power`);
+
+      // Check war power
+      const attackPower = await war.read.regionAttackPower([currentEpoch, 1n]);
+      const defensePower = await war.read.regionDefensePower([currentEpoch, 2n]);
+      console.log(`\n--- Battle Power ---`);
+      console.log(`\t> Region 1 Attack Power: ${formatEther(attackPower)} OLIG`);
+      console.log(`\t> Region 2 Defense Power: ${formatEther(defensePower)} OLIG`);
+      console.log(`\t> ${attackPower > defensePower ? "⚔️ ATTACKER has advantage!" : "🛡️ DEFENDER has advantage!"}`);
+
+      // Resolve War
+      console.log("\n--- War Resolution ---");
+      await war.write.resolveWar([1n], { account: attacker.account });
+
+      // Check bribe pools after war (30% loot if attacker wins)
+      const region1After = await voter.read.regionData([currentEpoch, 1n]);
+      const region2After = await voter.read.regionData([currentEpoch, 2n]);
+
+      console.log(`\n--- After War Results ---`);
+      console.log(`\t> Region 1 bribe: ${formatEther(region1After[1])} mETH`);
+      console.log(`\t> Region 2 bribe: ${formatEther(region2After[1])} mETH`);
+
+      if (attackPower > defensePower) {
+        const loot = (region2Before[1] * 30n) / 100n;
+        console.log(`\n\t> 🏆 ATTACKER WINS!`);
+        console.log(`\t> 💰 Looted 30% from Region 2: ~${formatEther(loot)} mETH`);
+        assert.ok(region1After[1] > region1Before[1], "Attacker should have gained bribe");
+        assert.ok(region2After[1] < region2Before[1], "Defender should have lost bribe");
+      } else {
+        console.log(`\n\t> 🛡️ DEFENDER WINS! Region 2 keeps its bribe pool.`);
+      }
+
+      console.log(`\t> ⚔️ War simulation complete!`);
+    }
+
+    // ========================================
+    // PHASE 6: STORE & BURN TEST
+    // ========================================
+    console.log("\n=== PHASE 6: Store & Burn ===");
     {
       await olig.write.mint([farmer.account.address, parseEther("100")]);
       await store.write.addItem(["Golden Castle", parseEther("50"), false]);

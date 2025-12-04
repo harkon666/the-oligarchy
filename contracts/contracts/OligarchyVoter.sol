@@ -67,7 +67,8 @@ contract OligarchyVoter is ReentrancyGuard, Ownable, IOligarchyVoter {
         warTheater = _warTheater;
     }
 
-    function _getCurrentEpoch() internal view returns (uint256) {
+    // Public epoch function - single source of truth for all contracts
+    function getCurrentEpoch() public view returns (uint256) {
         return (block.timestamp - CONTRACT_DEPLOYED) / EPOCH_DURATION;
     }
 
@@ -76,7 +77,11 @@ contract OligarchyVoter is ReentrancyGuard, Ownable, IOligarchyVoter {
     function getRegionWeight(
         uint256 _regionId
     ) external view override returns (uint256) {
-        return regionData[_getCurrentEpoch()][_regionId].totalVotes;
+        // Use PREVIOUS epoch because syncVotes is called after epoch changes
+        // to apply the voting results from the epoch that just finished
+        uint256 currentEpoch = getCurrentEpoch();
+        if (currentEpoch == 0) return 0;
+        return regionData[currentEpoch - 1][_regionId].totalVotes;
     }
 
     function depositBribe(
@@ -86,7 +91,7 @@ contract OligarchyVoter is ReentrancyGuard, Ownable, IOligarchyVoter {
         require(_amount > 0, "Zero amount");
         mETH.safeTransferFrom(msg.sender, address(this), _amount);
 
-        uint256 epoch = _getCurrentEpoch();
+        uint256 epoch = getCurrentEpoch();
         regionData[epoch][_regionId].bribeAmount += _amount;
         emit BribeDeposited(epoch, _regionId, _amount);
     }
@@ -98,7 +103,7 @@ contract OligarchyVoter is ReentrancyGuard, Ownable, IOligarchyVoter {
         uint256 _percent
     ) external override {
         require(msg.sender == warTheater, "Only War Theater");
-        uint256 epoch = _getCurrentEpoch();
+        uint256 epoch = getCurrentEpoch();
 
         uint256 victimBribe = regionData[epoch][_fromRegion].bribeAmount;
         if (victimBribe > 0) {
@@ -112,7 +117,7 @@ contract OligarchyVoter is ReentrancyGuard, Ownable, IOligarchyVoter {
     // --- VOTING & CLAIM ---
 
     function vote(uint256 _regionId) external nonReentrant {
-        uint256 epoch = _getCurrentEpoch();
+        uint256 epoch = getCurrentEpoch();
         uint256 totalPower = veOLIG.balanceOf(msg.sender);
 
         require(totalPower > 0, "No voting power");
@@ -135,7 +140,7 @@ contract OligarchyVoter is ReentrancyGuard, Ownable, IOligarchyVoter {
         uint256 _epoch,
         uint256 _regionId
     ) external nonReentrant {
-        require(_epoch < _getCurrentEpoch(), "Epoch not finished");
+        require(_epoch < getCurrentEpoch(), "Epoch not finished");
         require(
             hasVotedInRegion[_epoch][_regionId][msg.sender],
             "Did not vote"
