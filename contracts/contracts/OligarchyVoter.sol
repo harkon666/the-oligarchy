@@ -111,26 +111,24 @@ contract OligarchyVoter is ReentrancyGuard, Ownable, IOligarchyVoter {
 
     // --- VOTING & CLAIM ---
 
-    function vote(uint256 _regionId, uint256 _weight) external nonReentrant {
+    function vote(uint256 _regionId) external nonReentrant {
         uint256 epoch = _getCurrentEpoch();
         uint256 totalPower = veOLIG.balanceOf(msg.sender);
 
-        require(
-            userUsedPower[epoch][msg.sender] + _weight <= totalPower,
-            "Not enough power"
-        );
+        require(totalPower > 0, "No voting power");
         require(
             !hasVotedInRegion[epoch][_regionId][msg.sender],
             "Already voted here"
         );
 
-        userUsedPower[epoch][msg.sender] += _weight;
-        regionData[epoch][_regionId].totalVotes += _weight;
+        // Use full voting power - fetched fresh to avoid time decay issues
+        userUsedPower[epoch][msg.sender] += totalPower;
+        regionData[epoch][_regionId].totalVotes += totalPower;
 
         hasVotedInRegion[epoch][_regionId][msg.sender] = true;
-        userVotes[epoch][_regionId][msg.sender] += _weight;
+        userVotes[epoch][_regionId][msg.sender] += totalPower;
 
-        emit Voted(msg.sender, _regionId, _weight);
+        emit Voted(msg.sender, _regionId, totalPower);
     }
 
     function claimBribe(
