@@ -7,12 +7,17 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IOligarchyVoter.sol";
 import "./interfaces/IVeOligarchy.sol";
+import "./interfaces/ILandGenesis.sol"; // Added LandGenesis Interface
 
 contract OligarchyVoter is ReentrancyGuard, Ownable, IOligarchyVoter {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable mETH;
     IVeOligarchy public immutable veOLIG;
+
+    // --- LAND GENESIS INTEGRATION ---
+    // Address of the Land NFT contract to check for voting boosts
+    ILandGenesis public landGenesis;
 
     // Address contract perang (di-set setelah deploy)
     address public warTheater;
@@ -67,6 +72,14 @@ contract OligarchyVoter is ReentrancyGuard, Ownable, IOligarchyVoter {
         warTheater = _warTheater;
     }
 
+    /**
+     * @notice Set the Land Genesis contract address.
+     * @param _landGenesis Address of the LandGenesis contract.
+     */
+    function setLandGenesis(address _landGenesis) external onlyOwner {
+        landGenesis = ILandGenesis(_landGenesis);
+    }
+
     // Public epoch function - single source of truth for all contracts
     function getCurrentEpoch() public view returns (uint256) {
         return (block.timestamp - CONTRACT_DEPLOYED) / EPOCH_DURATION;
@@ -119,6 +132,17 @@ contract OligarchyVoter is ReentrancyGuard, Ownable, IOligarchyVoter {
     function vote(uint256 _regionId) external nonReentrant {
         uint256 epoch = getCurrentEpoch();
         uint256 totalPower = veOLIG.balanceOf(msg.sender);
+
+        // --- LAND BOOST LOGIC ---
+        // If LandGenesis is set, check if user has a boost
+        if (address(landGenesis) != address(0)) {
+            uint256 boostPercent = landGenesis.getMultiplier(msg.sender);
+            if (boostPercent > 0) {
+                // Calculate bonus: (BasePower * Percent) / 100
+                uint256 bonusPower = (totalPower * boostPercent) / 100;
+                totalPower += bonusPower;
+            }
+        }
 
         require(totalPower > 0, "No voting power");
         require(
