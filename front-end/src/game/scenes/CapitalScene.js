@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
+import MultiplayerScene from './MultiplayerScene';
 import { Player } from '../entities/Player';
 import runImg from '../../assets/game/run.png';
 import walkImg from '../../assets/game/walk.png';
 import idleImg from '../../assets/game/idle.png';
-import { createCharacterAnimations } from '../utils/Animation';
 
 // Import map and tilesets
 import capitalMapUrl from '../../assets/game/maps/capital.tmj?url';
@@ -13,7 +13,7 @@ import grassImg from '../../assets/game/maps/TX Tileset Grass.png';
 import campfireImg from '../../assets/game/maps/Campfire.png';
 import boardImg from '../../assets/game/maps/Board.png';
 
-export default class CapitalScene extends Phaser.Scene {
+export default class CapitalScene extends MultiplayerScene {
     constructor() {
         super('CapitalScene');
     }
@@ -36,7 +36,9 @@ export default class CapitalScene extends Phaser.Scene {
     }
 
     create() {
+        super.create();
         console.log('CapitalScene: create started');
+
         // Create the map
         const map = this.make.tilemap({ key: 'capital' });
 
@@ -46,7 +48,6 @@ export default class CapitalScene extends Phaser.Scene {
         const grassTiles = map.addTilesetImage('TX Tileset Grass', 'TX Tileset Grass');
         const campfireTiles = map.addTilesetImage('Campfire', 'Campfire');
 
-        // Note: 'Props' tileset is removed as requested
         const tilesets = [castleTiles, buildingsTiles, grassTiles, campfireTiles];
 
         // Create layers
@@ -58,16 +59,13 @@ export default class CapitalScene extends Phaser.Scene {
 
         // --- MANUALLY CREATE BOARD ---
         this.boards = this.physics.add.staticGroup();
-        // Placing board at x:598, y:255 (based on previous map data)
-        // Store it in 'this.votingBoard' for distance checking later
         this.votingBoard = this.boards.create(598, 255, 'Board');
         this.votingBoard.setOrigin(0, 1);
         this.votingBoard.setDepth(5);
         this.votingBoard.setScale(2);
-        this.votingBoard.refreshBody(); // Important for static physics bodies after scaling
+        this.votingBoard.refreshBody();
 
         // --- CAMPFIRE OBJECTS FROM MAP ---
-        // Helper to recursively find an object layer by name
         const findObjectLayerByName = (root, name) => {
             if (root.name === name && (root.objects || root.type === 'objectgroup')) {
                 return root;
@@ -81,9 +79,6 @@ export default class CapitalScene extends Phaser.Scene {
             }
             return null;
         };
-
-        // Create Animations
-        createCharacterAnimations(this);
 
         // Campfire Animation
         this.anims.create({
@@ -99,12 +94,10 @@ export default class CapitalScene extends Phaser.Scene {
 
             if (layer) {
                 layer.objects.forEach(obj => {
-                    // Default creation for other objects (like Campfire)
                     const sprite = this.add.sprite(obj.x, obj.y, textureKey);
                     sprite.setOrigin(0, 1);
                     sprite.setDepth(5);
 
-                    // Play animation for campfire
                     if (layerName === 'campfire') {
                         sprite.play('burn');
                     }
@@ -138,7 +131,7 @@ export default class CapitalScene extends Phaser.Scene {
         })
             .setScrollFactor(0)
             .setInteractive({ useHandCursor: true })
-            .setDepth(100); // UI on top
+            .setDepth(100);
 
         backText.on('pointerdown', () => {
             this.scene.start('GridScene');
@@ -153,26 +146,26 @@ export default class CapitalScene extends Phaser.Scene {
             padding: { x: 4, y: 4 },
             align: 'center'
         }).setDepth(101).setVisible(false);
+
+        // Start Multiplayer
+        this.startMultiplayer();
     }
 
     update(time, delta) {
-        if (this.player) {
-            this.player.update(time, delta);
+        super.update(time, delta);
 
-            // Reset interaction state
+        if (this.player) {
+            // Interaction logic
             this.interactionText.setVisible(false);
             let canVote = false;
 
-            // Check distance for interaction (more reliable than overlap when colliders are active)
             if (this.votingBoard) {
                 const distance = Phaser.Math.Distance.Between(
                     this.player.x, this.player.y,
-                    this.votingBoard.x + (this.votingBoard.displayWidth / 2), this.votingBoard.y - (this.votingBoard.displayHeight / 1.3) // Check from center-ish
+                    this.votingBoard.x + (this.votingBoard.displayWidth / 2), this.votingBoard.y - (this.votingBoard.displayHeight / 1.3)
                 );
 
-                // 100px radius for interaction
                 if (distance < 100) {
-                    // Show text above the board
                     this.interactionText.setPosition(
                         this.votingBoard.x - this.interactionText.width / 2,
                         this.votingBoard.y - this.votingBoard.displayHeight - 10
@@ -182,7 +175,6 @@ export default class CapitalScene extends Phaser.Scene {
                 }
             }
 
-            // Handle Input
             if (canVote && Phaser.Input.Keyboard.JustDown(this.fKey)) {
                 console.log('CapitalScene: F key pressed, emitting OPEN_VOTING_MODAL');
                 this.game.events.emit('OPEN_VOTING_MODAL');

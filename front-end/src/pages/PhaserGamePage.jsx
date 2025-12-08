@@ -104,6 +104,24 @@ const PhaserGame = () => {
                             </div>
                         </div>
                     )}
+
+                    {/* Chat UI Overlay */}
+                    <div className="absolute bottom-4 left-4 z-40 w-80 pointer-events-none">
+                        <div
+                            id="chat-log"
+                            className="h-48 bg-black/50 text-white p-2 rounded mb-2 overflow-y-auto pointer-events-auto font-mono text-sm"
+                            style={{ textShadow: '1px 1px 0 #000' }}
+                        >
+                            <div className="text-yellow-400">System: Welcome to The Oligarchy!</div>
+                        </div>
+                        <input
+                            id="chat-input"
+                            type="text"
+                            placeholder="Press Enter to chat..."
+                            className="w-full bg-black/70 text-white border border-slate-600 rounded p-2 pointer-events-auto focus:outline-none focus:border-yellow-500"
+                            style={{ display: 'none' }}
+                        />
+                    </div>
                 </div>
 
                 {/* Controls Bar */}

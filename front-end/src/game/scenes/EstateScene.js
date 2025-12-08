@@ -1,30 +1,29 @@
 import Phaser from 'phaser';
+import MultiplayerScene from './MultiplayerScene';
 import runImg from '../../assets/game/run.png';
 import walkImg from '../../assets/game/walk.png';
 import idleImg from '../../assets/game/idle.png';
 import { Player } from '../entities/Player';
-import { createCharacterAnimations } from '../utils/Animation';
 
-export default class EstateScene extends Phaser.Scene {
+export default class EstateScene extends MultiplayerScene {
     constructor() {
         super('EstateScene');
-        this.player = null;
     }
 
     init(data) {
-        this.spawnX = data.x || 0;
-        this.spawnY = data.y || 0;
+        this.spawnX = data.x || 1000;
+        this.spawnY = data.y || 1000;
     }
 
     preload() {
-        // Load the sprite sheet
-        // Frame dimensions 64x64 as requested
         this.load.spritesheet('character_run', runImg, { frameWidth: 64, frameHeight: 64 });
         this.load.spritesheet('character_walk', walkImg, { frameWidth: 64, frameHeight: 64 });
         this.load.spritesheet('character_idle', idleImg, { frameWidth: 64, frameHeight: 64 });
     }
 
     create() {
+        super.create();
+
         // Background
         this.add.rectangle(0, 0, this.cameras.main.width, this.cameras.main.height, 0x333333).setOrigin(0);
 
@@ -38,10 +37,7 @@ export default class EstateScene extends Phaser.Scene {
         const centerX = this.cameras.main.width / 2;
         const centerY = this.cameras.main.height / 2;
 
-        // Create Animations
-        createCharacterAnimations(this);
-
-        // Create Player
+        // Entities
         this.player = new Player(this, centerX, centerY);
 
         // Back Button
@@ -53,11 +49,11 @@ export default class EstateScene extends Phaser.Scene {
         backText.on('pointerdown', () => {
             this.scene.start('GridScene', { regionID: 'Returned' });
         });
+
+        this.startMultiplayer();
     }
 
     update(time, delta) {
-        if (this.player) {
-            this.player.update(time, delta);
-        }
+        super.update(time, delta);
     }
 }
