@@ -13,6 +13,7 @@ export default class EstateScene extends MultiplayerScene {
     init(data) {
         this.spawnX = data.x || 1000;
         this.spawnY = data.y || 1000;
+        this.nameCity = data.nameCity || 'Unknown';
     }
 
     preload() {
@@ -30,6 +31,10 @@ export default class EstateScene extends MultiplayerScene {
         // Display Spawn Info
         this.add.text(20, 20, `Estate View`, { fontSize: '24px', fill: '#fff' });
         this.add.text(20, 50, `Spawning at Coordinate: [${this.spawnX}, ${this.spawnY}]`, {
+            fontSize: '18px',
+            fill: '#00ff00'
+        });
+        this.add.text(20, 80, `City Name: ${this.nameCity}`, {
             fontSize: '18px',
             fill: '#00ff00'
         });
