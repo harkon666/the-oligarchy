@@ -1,3 +1,4 @@
+
 import { Link } from 'react-router-dom';
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { useNavigate } from 'react-router-dom'
@@ -10,15 +11,6 @@ const LandingPage = () => {
     const navigate = useNavigate()
     const [showSuccessModal, setShowSuccessModal] = useState(false)
 
-    // useEffect(() => {
-    //     if (isConnected) {
-    //         setShowSuccessModal(true)
-    //         const timer = setTimeout(() => {
-    //             navigate('/play')
-    //         }, 2000) // Redirect after 2 seconds
-    //         return () => clearTimeout(timer)
-    //     }
-    // }, [isConnected, navigate])
     return (
         <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white p-4">
             {/* Container Utama dengan efek border glowing */}
@@ -61,21 +53,22 @@ const LandingPage = () => {
                     {connectors.map((connector) => (
 
                         <div>
+                            {connector.name}
                             <button
                                 key={connector.uid}
                                 onClick={() => connect({ connector })}
                                 disabled={isPending || isConnected}
                                 className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition flex items-center gap-2"
                             >
-                                {isPending || isConnected ? 'Connecting' : `Connect ${connector.name}`}
+                                {isPending || isConnected ? 'Connecting' : `Connect ${connector.name} `}
                             </button>
                         </div>
                     ))}
                     {address}
                     <button
-                        onClick={disconnect}
-                        disabled={isPending || isConnected}
-                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition flex items-center gap-2"
+                        onClick={() => disconnect()}
+                        disabled={!isConnected}
+                        className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition flex items-center gap-2"
                     >
                         Disconnect
                     </button>

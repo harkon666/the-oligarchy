@@ -338,13 +338,12 @@
                 {
                  "draworder":"topdown",
                  "id":3,
-                 "locked":true,
                  "name":"Territories",
                  "objects":[
                         {
                          "height":0,
                          "id":1,
-                         "name":"",
+                         "name":"EastRegion",
                          "polygon":[
                                 {
                                  "x":0,
@@ -483,6 +482,16 @@
                                  "name":"Zone_A",
                                  "type":"string",
                                  "value":""
+                                }, 
+                                {
+                                 "name":"regionId",
+                                 "type":"string",
+                                 "value":"1"
+                                }, 
+                                {
+                                 "name":"theme",
+                                 "type":"string",
+                                 "value":"farm"
                                 }],
                          "rotation":0,
                          "type":"",
@@ -494,7 +503,7 @@
                         {
                          "height":0,
                          "id":2,
-                         "name":"",
+                         "name":"SouthRegion",
                          "polygon":[
                                 {
                                  "x":0,
@@ -645,6 +654,16 @@
                                  "name":"Zone_B",
                                  "type":"string",
                                  "value":""
+                                }, 
+                                {
+                                 "name":"regionId",
+                                 "type":"string",
+                                 "value":"2"
+                                }, 
+                                {
+                                 "name":"theme",
+                                 "type":"string",
+                                 "value":"trade"
                                 }],
                          "rotation":0,
                          "type":"",
@@ -656,7 +675,7 @@
                         {
                          "height":0,
                          "id":3,
-                         "name":"",
+                         "name":"NorthRegion",
                          "polygon":[
                                 {
                                  "x":0,
@@ -791,6 +810,16 @@
                                  "name":"Zone_C",
                                  "type":"string",
                                  "value":""
+                                }, 
+                                {
+                                 "name":"regionId",
+                                 "type":"string",
+                                 "value":"0"
+                                }, 
+                                {
+                                 "name":"theme",
+                                 "type":"string",
+                                 "value":"war"
                                 }],
                          "rotation":0,
                          "type":"",
@@ -836,7 +865,7 @@
                          "visible":true,
                          "width":192,
                          "x":1780,
-                         "y":186.666666666667
+                         "y":185.666666666667
                         }, 
                         {
                          "height":90.6666666666667,
@@ -1349,7 +1378,7 @@
                          "visible":true,
                          "width":114.667,
                          "x":669.333166666667,
-                         "y":1422.66666666667
+                         "y":1424.66666666667
                         }, 
                         {
                          "height":104,
@@ -1384,7 +1413,6 @@
                  "x":0,
                  "y":0
                 }],
-         "locked":true,
          "name":"Logic",
          "opacity":1,
          "type":"group",
@@ -1445,14 +1473,14 @@
              "width":1
             },
          "margin":0,
-         "name":"cityState",
+         "name":"city state",
          "spacing":0,
          "tilecount":1,
          "tileheight":500,
          "tiles":[
                 {
                  "id":0,
-                 "image":"cityState.png",
+                 "image":"city state.png",
                  "imageheight":500,
                  "imagewidth":500
                 }],

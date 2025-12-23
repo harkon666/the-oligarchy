@@ -5,7 +5,7 @@ import { injected } from 'wagmi/connectors'
 export const config = createConfig({
     chains: [hardhat],
     connectors: [
-        // injected(),
+        injected(),
     ],
     transports: {
         [hardhat.id]: http(),

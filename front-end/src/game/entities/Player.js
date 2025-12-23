@@ -13,6 +13,7 @@ export class Player extends Phaser.GameObjects.Sprite {
         // setOffset(x, y)
         this.body.setSize(32, 24);
         this.body.setOffset(16, 40);
+        // this.body.setDepth();
 
         this.lastDirection = 'down';
         this.isMoving = false;
