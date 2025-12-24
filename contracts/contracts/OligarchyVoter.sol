@@ -19,6 +19,10 @@ contract OligarchyVoter is ReentrancyGuard, Ownable, IOligarchyVoter {
     // Address of the Land NFT contract to check for voting boosts
     ILandGenesis public landGenesis;
 
+    // --- REGION POLITICS INTEGRATION ---
+    // Address of politics contract (Governor System)
+    address public regionPolitics;
+
     // Address contract perang (di-set setelah deploy)
     address public warTheater;
 
@@ -78,6 +82,14 @@ contract OligarchyVoter is ReentrancyGuard, Ownable, IOligarchyVoter {
      */
     function setLandGenesis(address _landGenesis) external onlyOwner {
         landGenesis = ILandGenesis(_landGenesis);
+    }
+
+    /**
+     * @notice Set the Region Politics contract address.
+     * @param _politics Address of the RegionPolitics contract.
+     */
+    function setRegionPolitics(address _politics) external onlyOwner {
+        regionPolitics = _politics;
     }
 
     // Public epoch function - single source of truth for all contracts
