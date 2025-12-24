@@ -13,6 +13,7 @@ export class Player extends Phaser.GameObjects.Sprite {
         // setOffset(x, y)
         this.body.setSize(32, 24);
         this.body.setOffset(16, 40);
+        // this.body.setDepth();
 
         this.lastDirection = 'down';
         this.isMoving = false;
@@ -29,7 +30,7 @@ export class Player extends Phaser.GameObjects.Sprite {
 
     update(time, delta) {
         const isRunning = this.cursors.shift.isDown;
-        const speed = isRunning ? 0.5 : 0.25; // pixels per ms
+        const speed = isRunning ? 0.4 : 0.2; // pixels per ms
 
         let vx = 0;
         let vy = 0;
@@ -85,6 +86,7 @@ export class Player extends Phaser.GameObjects.Sprite {
 
             if (this.isMoving) {
                 this.isMoving = false;
+                console.log('Player: Stopping movement, sending anim:', currentAnim);
                 return { moved: true, anim: currentAnim }; // Signal stop
             }
         }

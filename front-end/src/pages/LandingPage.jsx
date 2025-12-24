@@ -1,6 +1,16 @@
+
 import { Link } from 'react-router-dom';
+import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 
 const LandingPage = () => {
+    const { address, isConnected } = useAccount()
+    const { connectors, connect, error, isPending } = useConnect()
+    const { disconnect } = useDisconnect()
+    const navigate = useNavigate()
+    const [showSuccessModal, setShowSuccessModal] = useState(false)
+
     return (
         <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white p-4">
             {/* Container Utama dengan efek border glowing */}
@@ -33,12 +43,38 @@ const LandingPage = () => {
                 </div>
 
                 {/* Tombol dengan efek Hover Tailwind */}
-                <Link to="/play">
-                    <button className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-4 px-8 rounded-full text-xl transition-transform transform hover:scale-105 shadow-lg shadow-yellow-600/50">
-                        ENTER THE KINGDOM ➡️
-                    </button>
-                </Link>
+                <div className="flex gap-4 flex-col items-center">
+                    <Link to="/play">
+                        <button className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-4 px-8 rounded-full text-xl transition-transform transform hover:scale-105 shadow-lg shadow-yellow-600/50">
+                            ENTER THE KINGDOM ➡️
+                        </button>
+                    </Link>
 
+                    {connectors.map((connector) => (
+
+                        <div>
+                            {connector.name}
+                            <button
+                                key={connector.uid}
+                                onClick={() => connect({ connector })}
+                                disabled={isPending || isConnected}
+                                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition flex items-center gap-2"
+                            >
+                                {isPending || isConnected ? 'Connecting' : `Connect ${connector.name} `}
+                            </button>
+                        </div>
+                    ))}
+                    {address}
+                    <button
+                        onClick={() => disconnect()}
+                        disabled={!isConnected}
+                        className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition flex items-center gap-2"
+                    >
+                        Disconnect
+                    </button>
+
+                    {error && <div className="mt-4 text-red-500">{error.message}</div>}
+                </div>
             </div>
         </div>
     );
